@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="329" height="329" viewBox="0 0 329 329">
+  <g id="paymentNotDone" transform="translate(-821 -276)">
+    <circle id="Ellipse_103" data-name="Ellipse 103" cx="164.5" cy="164.5" r="164.5" transform="translate(821 276)" fill="red" opacity="0.15"/>
+    <circle id="Ellipse_104" data-name="Ellipse 104" cx="126.5" cy="126.5" r="126.5" transform="translate(859 314)" fill="red" opacity="0.2"/>
+    <circle id="Ellipse_105" data-name="Ellipse 105" cx="85.5" cy="85.5" r="85.5" transform="translate(900 355)" fill="red" opacity="0.57"/>
+    <path id="Icon_feather-check" data-name="Icon feather-check" d="M74.091,9,27.278,55.812,6,34.534" transform="translate(945.5 408.5)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="10"/>
+  </g>
+</svg>
