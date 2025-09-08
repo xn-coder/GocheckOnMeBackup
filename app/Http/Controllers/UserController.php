@@ -214,22 +214,55 @@ class UserController extends Controller
     return response()->json(['status' => true, 'message' => 'Time schedule added successfully']);
 }
 
-    private function convertToUTC($time, $amPm, $timezone)
-    {
-        if (empty($time)) {
-            return null;
-        }
-
-        $amPm = strtolower($amPm);
-        if ($amPm !== 'am' && $amPm !== 'pm') {
-            return null;
-        }
-
-        $time = str_replace(' pm', '', $time);
-        $dateTime = new \DateTime("$time $amPm", new \DateTimeZone($timezone));
-        $dateTime->setTimezone(new \DateTimeZone('UTC'));
-        return $dateTime->format('H:i');
+private function convertToUTC($time, $amPm, $timezone)
+{
+    if (empty($time) || empty($amPm)) {
+        return null;
     }
+
+    $amPm = strtolower(trim($amPm));
+    if ($amPm !== "am" && $amPm !== "pm") {
+        return null;
+    }
+
+    // Clean the time string - remove any existing am/pm
+    $time = trim($time);
+    $time = str_replace([" am", " pm", "am", "pm"], "", $time);
+    
+    // Validate time format (should be H:i or H:i:s)
+    if (!preg_match("/^\d{1,2}:\d{2}(:\d{2})?$/", $time)) {
+        return null;
+    }
+
+    try {
+        // Create datetime string in 12-hour format
+        $dateTimeString = $time . " " . $amPm;
+        
+        // Use today"s date for conversion (since we only care about time)
+        $today = date("Y-m-d");
+        $fullDateTime = $today . " " . $dateTimeString;
+        
+        // Create DateTime object in the user"s timezone
+        $dateTime = \DateTime::createFromFormat("Y-m-d g:i A", $fullDateTime, new \DateTimeZone($timezone));
+        
+        if ($dateTime === false) {
+            // Try with seconds format
+            $dateTime = \DateTime::createFromFormat("Y-m-d g:i:s A", $fullDateTime, new \DateTimeZone($timezone));
+        }
+        
+        if ($dateTime === false) {
+            return null;
+        }
+        
+        // Convert to UTC
+        $dateTime->setTimezone(new \DateTimeZone("UTC"));
+        return $dateTime->format("H:i");
+        
+    } catch (\Exception $e) {
+        \Log::error("Time conversion error: " . $e->getMessage() . " for time: $time $amPm in timezone: $timezone");
+        return null;
+    }
+}
 
     public function notification_number_and_email(Request $request){
         $user_id = Auth::user()->id;

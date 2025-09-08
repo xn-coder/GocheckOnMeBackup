@@ -29,10 +29,15 @@ class Kernel extends ConsoleKernel
 
         require base_path('routes/console.php');
     }
+    
     protected function schedule(Schedule $schedule)
-{
-    $schedule->command('fetch:call-history')->everyMinute();
-}
+    {
+        // Check and initiate calls every minute
+        $schedule->command('calls:check-and-initiate')->everyMinute();
+        
+        // Fetch call history every 5 minutes to update status
+        $schedule->command('fetch:call-history')->everyFiveMinutes();
+    }
 
 
 }

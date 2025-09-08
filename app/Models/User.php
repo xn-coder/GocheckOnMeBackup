@@ -23,7 +23,9 @@ class User extends Authenticatable
         'password',
         'record_voice',
         'phone',
-        'cell_phone_no'
+        'cell_phone_no',
+        'alternate_email',
+        'alternate_phone_no'
     ];
 
     /**
@@ -44,4 +46,29 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    
+    /**
+     * Get the loved ones for the user.
+     */
+    public function lovedones()
+    {
+        return $this->hasMany(Lovedone::class);
+    }
+
+    /**
+     * Get the scheduled times for the user.
+     */
+    public function times()
+    {
+        return $this->hasMany(Time::class);
+    }
+
+    /**
+     * Get the call statuses for the user.
+     */
+    public function callStatuses()
+    {
+        return $this->hasMany(CallStatus::class);
+    }
 }

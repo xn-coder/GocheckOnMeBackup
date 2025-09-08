@@ -19,15 +19,98 @@ Route::get('/', function () {
 Route::get('/call', function () {
     return view('front.call');
 });
+Route::get('/test-time-conversion', function () {
+    // Test the time conversion logic
+    $userController = new App\Http\Controllers\UserController();
+    
+    // Test cases
+    $testCases = [
+        ['time' => '1:11', 'ampm' => 'am', 'timezone' => 'Asia/Kolkata'],
+        ['time' => '1:12', 'ampm' => 'am', 'timezone' => 'Asia/Kolkata'],
+        ['time' => '1:13', 'ampm' => 'am', 'timezone' => 'Asia/Kolkata'],
+        ['time' => '12:00', 'ampm' => 'am', 'timezone' => 'Asia/Kolkata'],
+        ['time' => '12:00', 'ampm' => 'pm', 'timezone' => 'Asia/Kolkata'],
+    ];
+    
+    $results = [];
+    foreach ($testCases as $test) {
+        // Using reflection to access private method
+        $reflection = new ReflectionClass($userController);
+        $method = $reflection->getMethod('convertToUTC');
+        $method->setAccessible(true);
+        
+        $utcTime = $method->invoke($userController, $test['time'], $test['ampm'], $test['timezone']);
+        
+        $results[] = [
+            'input' => $test['time'] . ' ' . $test['ampm'] . ' (' . $test['timezone'] . ')',
+            'output_utc' => $utcTime,
+            'status' => $utcTime ? 'SUCCESS' : 'FAILED'
+        ];
+    }
+    
+    return response()->json($results, 200, [], JSON_PRETTY_PRINT);
+});
+Route::get('/test-call-check', function () {
+    // Test the call checking logic without actually making calls
+    $voiceController = new App\Http\Controllers\VoiceController();
+    $request = new Illuminate\Http\Request();
+    
+    // Get the response
+    $response = $voiceController->checkAndInitiateCall($request);
+    $data = $response->getData();
+    
+    return response()->json([
+        'current_time_utc' => now()->format('Y-m-d H:i:s T'),
+        'message' => $data->message,
+        'debug_info' => 'Check application logs for detailed scheduling information'
+    ], 200, [], JSON_PRETTY_PRINT);
+});
+Route::get('/debug-times', function () {
+    // Debug endpoint to see what times are stored in database
+    $users = App\Models\User::where('role', 2)->with(['lovedones', 'times'])->get();
+    
+    $debug_data = [];
+    foreach ($users as $user) {
+        $lovedone = $user->lovedones->first();
+        $times = $user->times;
+        
+        $user_debug = [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'timezone' => $lovedone ? $lovedone->timezone : 'Not set',
+            'scheduled_times' => []
+        ];
+        
+        foreach ($times as $time) {
+            $user_debug['scheduled_times'][] = [
+                'day' => $time->day,
+                'time1' => $time->time1,
+                'time2' => $time->time2, 
+                'time3' => $time->time3,
+                'am_pm1' => $time->am_pm1,
+                'am_pm2' => $time->am_pm2,
+                'am_pm3' => $time->am_pm3
+            ];
+        }
+        
+        $debug_data[] = $user_debug;
+    }
+    
+    return response()->json([
+        'debug_message' => 'Current time schedules in database',
+        'current_utc_time' => now()->format('Y-m-d H:i:s A'),
+        'users_with_schedules' => $debug_data
+    ], 200, [], JSON_PRETTY_PRINT);
+});
 // Route::get('/upload-voice', [VoiceController::class, 'showUploadForm']);
 // Route::view('/', 'call');
 Route::post('/call', 'App\Http\Controllers\VoiceController@initiateCall')->name('initiate_call');
 Route::get('/upload-voice', 'App\Http\Controllers\VoiceController@showUploadForm')->name('showUploadForm');
 Route::post('/upload_voice', 'App\Http\Controllers\VoiceController@uploadVoice')->name('uploadVoice');
 Route::get('/twiml', 'App\Http\Controllers\VoiceController@twimlResponse')->name('twiml');
-Route::get('checkAndInitiateCall', 'App\Http\Controllers\VoiceController@checkAndInitiateCall')->name('checkAndInitiateCall');
-Route::post('/call-status', 'App\Http\Controllers\VoiceController@handleCallback');
-Route::get('/getCallHistory', 'App\Http\Controllers\VoiceController@getCallHistory');
+Route::get('/checkAndInitiateCall', 'App\Http\Controllers\VoiceController@checkAndInitiateCall')->name('checkAndInitiateCall');
+Route::post('/call-status', 'App\Http\Controllers\VoiceController@handleCallback')->name('call_status_callback');
+Route::get('/getCallHistory', 'App\Http\Controllers\VoiceController@getCallHistory')->name('getCallHistory');
 // Route::post('/voice/message', 'TwilioController@handleVoiceMessage')->name('twilio.voice.message');
 
 
