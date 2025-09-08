@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Artisan;
 use App\Jobs\UpdateCallStatus;
 use App\Jobs\SendTextMessage;
 use Twilio\Http\CurlClient;
+use Illuminate\Support\Facades\Mail;
 use Exception;
 
 class VoiceController extends Controller
@@ -75,7 +76,7 @@ class VoiceController extends Controller
         $callsInitiated = 0;
 
         foreach ($allUsers as $user) {
-            // Get loved one\'s timezone or use UTC as fallback
+            // Get loved one"s timezone or use UTC as fallback
             $lovedone = Lovedone::where("user_id", $user->id)->where("service_status", 1)->first();
             
             if (!$lovedone) {
@@ -84,7 +85,7 @@ class VoiceController extends Controller
             
             $timezone = $lovedone->timezone ?: "UTC";
             
-            // Get current time in the loved one\'s timezone
+            // Get current time in the loved one"s timezone
             $currentTime = Carbon::now($timezone);
             $currentTimeFormatted = $currentTime->format("H:i");
             $currentDay = strtolower($currentTime->format("D"));
@@ -102,7 +103,7 @@ class VoiceController extends Controller
 
                 foreach ($times as $scheduledTime) {
                     if ($scheduledTime) {
-                        // Convert UTC scheduled time back to user\'s timezone for comparison
+                        // Convert UTC scheduled time back to user"s timezone for comparison
                         $scheduledInUserTz = null;
                         
                         try {
@@ -302,6 +303,26 @@ public function initiateCall($user){
             return response()->json(["message" => "Invalid loved one phone number."]);
         }
 
+        // FOR TESTING: Send email notification instead of making actual call
+        // TODO: Remove this when VOIP service is ready
+        if (env("APP_ENV") === "local" || env("USE_EMAIL_NOTIFICATIONS", true)) {
+            $this->sendCallNotificationEmail($user, $lovedone);
+            
+            // Still record the "call" in the database for tracking
+            CallStatus::create([
+                "user_id" => $user->id,
+                "lovedone_number" => $lovedoneNumber,
+                "call_status" => "email_sent",
+                "call_sid" => "EMAIL_" . time() . "_" . $user->id,
+                "initiated_at" => Carbon::now()
+            ]);
+            
+            Log::info("Email notification sent instead of call for user {$user->id}");
+            return response()->json(["message" => "Email notification sent instead of call", "call_sid" => "EMAIL_" . time() . "_" . $user->id]);
+        }
+
+        // ACTUAL TWILIO CALL CODE (for when VOIP service is ready)
+
         // Verify phone number exists and is valid - skip for testing
             // try {
             //     $phone_number = $this->client->lookups->v1->phoneNumbers($lovedoneNumber)->fetch();
@@ -318,7 +339,7 @@ public function initiateCall($user){
             $lovedoneNumber,
             $this->from,
             [
-                "record" => false, // Don\'t record the call itself
+                "record" => false, // Don"t record the call itself
                 "url" => $twimlUrl,
                 "statusCallback" => $statusCallbackUrl,
                 "statusCallbackEvent" => ["initiated", "ringing", "answered", "completed"],

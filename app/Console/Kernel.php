@@ -37,6 +37,10 @@ class Kernel extends ConsoleKernel
         
         // Fetch call history every 5 minutes to update status
         $schedule->command('fetch:call-history')->everyMinute();
+
+        
+        // Process monthly billing daily at 10 AM
+        $schedule->command('billing:monthly')->dailyAt('10:00');
     }
 
 

@@ -218,7 +218,17 @@ document.addEventListener('DOMContentLoaded', function() {
             $('form#step-nstruction').submit(function(e) {
                 e.preventDefault();
 
-                 
+                   // Validate call limits before submitting
+                var validationErrors = validateDailyCallLimits();
+                if (validationErrors.length > 0) {
+                    Swal.fire({
+                        title: "Too Many Calls!",
+                        html: validationErrors.join("<br>"),
+                        icon: "error",
+                        confirmButtonText: "OK"
+                    });
+                    return;
+                }
 
                 var formData = new FormData(this);
                 $.ajax({
@@ -249,11 +259,55 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error(xhr.responseText);
+                        if (xhr.status === 400) {
+                            var response = JSON.parse(xhr.responseText);
+                            if (response.errors) {
+                                Swal.fire({
+                                    title: "Call Limit Exceeded!",
+                                    html: response.errors.join("<br>"),
+                                    icon: "error",
+                                    confirmButtonText: "OK"
+                                });
+                            }
+                        } else {
+                            console.error(xhr.responseText);
+                        }
                     }
                 });
             });
+         // Real-time validation as user types
+         $("input[name*="_time"]").on("input", function() {
+                validateDailyCallLimits();
+            });
         });
+
+        function validateDailyCallLimits() {
+            var days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+            var errors = [];
+            
+            days.forEach(function(day) {
+                var timeCount = 0;
+                
+                // Count non-empty time inputs for this day
+                if ($("input[name="" + day + "_time1"]").val().trim() !== "") timeCount++;
+                if ($("input[name="" + day + "_time2"]").val().trim() !== "") timeCount++;
+                if ($("input[name="" + day + "_time3"]").val().trim() !== "") timeCount++;
+                
+                if (timeCount > 3) {
+                    errors.push("Maximum 3 calls allowed per day. You entered " + timeCount + " times for " + day.charAt(0).toUpperCase() + day.slice(1) + ".");
+                }
+                
+                // Visual feedback - highlight the day column if over limit
+                var dayColumn = $("input[name="" + day + "_time1"]").closest("td");
+                if (timeCount > 3) {
+                    dayColumn.css("background-color", "#ffcccc");
+                } else {
+                    dayColumn.css("background-color", "");
+                }
+            });
+            
+            return errors;
+        }
     </script>
     <script type="text/javascript">
         $(document).ready(function(){
@@ -437,6 +491,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         <h2 style="font-size: 40px; text-align: center; margin-bottom: 0px; margin-top: 48px;">$7.47 per
                             month for <br> three (3) calls per day. </h2>
+
+                        <div style="background-color: #ffffcc; border: 2px solid #ffcc00; padding: 15px; margin: 20px 0; border-radius: 5px; text-align: center;">
+                            <h3 style="color: #cc6600; margin-top: 0;">⚠️ DAILY CALL LIMIT ⚠️</h3>
+                            <p><strong>Maximum 3 calls allowed per calendar day (in your loved one\'s timezone)</strong></p>
+                            <p>• The system will prevent you from entering more than 3 times per day<br>
+                            • If you try to exceed this limit, you\'ll see a warning message<br>
+                            • Use the <a href='{{url("/practice")}}'>Practice Page</a> for unlimited practice entries</p>
+                        </div>
+
                         <p>Up to three calls per day, please use this practice
                             form.</p>
                         <table border="1" width="800" cellpadding="2" style="border-collapse: collapse;" class="call_three_perday_table">
@@ -696,151 +759,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <!-- </form> -->
                         </td>
 
-                        <!-- <tr>
-                            <td>
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td>
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td>
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="time">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                            <td valign="top">
-
-                                <font color="#800000" face="Arial">
-                                    <input type="text" name="time[]">
-                                    <div style="margin-top: 4px;">
-                                        <input type="radio" value="" checked name="">am
-                                        <input type="radio" value="" name="time">pm
-                                    </div>
-                                </font>
-                            </td>
-                        </tr> -->
-
                         </table>
 
 
@@ -940,9 +858,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         </p>
                     </div>
                     <p align="center">
+                        <a href='{{url("/practice")}}'>
+                            <img border="0" id="img_practice" src='{{url("front-assets/button28.jpg")}}' height="20" width="160" alt="Practice Page" onmouseover="FP_swapImg(1,0,/*id*/\'img_practice\',/*url*/url(\'front-assets/button29.jpg\'))" onmouseout="FP_swapImg(0,0,/*id*/\'img_practice\',/*url*/url(\'front-assets/button28.jpg\'))" onmousedown="FP_swapImg(1,0,/*id*/\'img_practice\',/*url*/url(\'front-assets/button2A.jpg\'))" onmouseup="FP_swapImg(0,0,/*id*/\'img_practice\',/*url*/url(\'front-assets/button29.jpg\'))" fp-style="fp-btn: Embossed Capsule 4; fp-font-style: Bold Italic; fp-font-color-hover: #800000; fp-proportional: 0; fp-orig: 0" fp-title="Practice Page"></a>&nbsp;
                         <a href="{{url('/howitworks')}}">
-                            <img border="0" id="img23" src="{{url('front-assets/button28.jpg')}}" height="20" width="160" alt="How it Works" onmouseover="FP_swapImg(1,0,/*id*/'img23',/*url*/url('front-assets/button29.jpg'))" onmouseout="FP_swapImg(0,0,/*id*/'img23',/*url*/url('front-assets/button28.jpg'))" onmousedown="FP_swapImg(1,0,/*id*/'img23',/*url*/url('front-assets/button2A.jpg'))" onmouseup="FP_swapImg(0,0,/*id*/'img23',/*url*/url('front-assets/button29.jpg'))" fp-style="fp-btn: Embossed Capsule 4; fp-font-style: Bold Italic; fp-font-color-hover: #800000; fp-proportional: 0; fp-orig: 0" fp-title="How it Works"></a>&nbsp;
-                        <a href="{{url('/instructions')}}">
+                            <img border="0" id="img23" src='{{url("front-assets/button28.jpg")}}' height="20" width="160" alt="How it Works" onmouseover="FP_swapImg(1,0,/*id*/\'img23\',/*url*/url(\'front-assets/button29.jpg\'))" onmouseout="FP_swapImg(0,0,/*id*/\'img23\',/*url*/url(\'front-assets/button28.jpg\'))" onmousedown="FP_swapImg(1,0,/*id*/\'img23\',/*url*/url(\'front-assets/button2A.jpg\'))" onmouseup="FP_swapImg(0,0,/*id*/\'img23\',/*url*/url(\'front-assets/button29.jpg\'))" fp-style="fp-btn: Embossed Capsule 4; fp-font-style: Bold Italic; fp-font-color-hover: #800000; fp-proportional: 0; fp-orig: 0" fp-title="How it Works"></a>
+                    </p>
+                    <p align="center"><a href="{{url('/instructions')}}">
                             <img border="0" id="img31" src="{{url('front-assets/button3C.jpg')}}" height="20" width="240" alt="Step by Step Instructions" onmouseover="FP_swapImg(1,0,/*id*/'img31',/*url*/url('front-assets/button3D.jpg'))" onmouseout="FP_swapImg(0,0,/*id*/'img31',/*url*/url('front-assets/button3C.jpg'))" onmousedown="FP_swapImg(1,0,/*id*/'img31',/*url*/url('front-assets/button3E.jpg'))" onmouseup="FP_swapImg(0,0,/*id*/'img31',/*url*/url('front-assets/button3D.jpg'))" fp-style="fp-btn: Embossed Capsule 4; fp-font-style: Bold Italic; fp-font-color-hover: #800000; fp-proportional: 0; fp-orig: 0" fp-title="Step by Step Instructions"></a>
                     </p>
                     <p align="center">

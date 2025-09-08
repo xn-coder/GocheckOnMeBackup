@@ -102,6 +102,10 @@ Route::get('/debug-times', function () {
         'users_with_schedules' => $debug_data
     ], 200, [], JSON_PRETTY_PRINT);
 });
+
+Route::get('/practice', function () {
+    return view('front.practice');
+});
 // Route::get('/upload-voice', [VoiceController::class, 'showUploadForm']);
 // Route::view('/', 'call');
 Route::post('/call', 'App\Http\Controllers\VoiceController@initiateCall')->name('initiate_call');
@@ -161,6 +165,10 @@ Route::prefix('admin')->group(function () {
 
     //users route
     Route::get('users-list',[App\Http\Controllers\admin\UserController::class,'user_list'])->name('user_list');
+    Route::get('client-management',[App\Http\Controllers\admin\UserController::class,'client_management'])->name('client_management');
+    Route::post('cancel-client',[App\Http\Controllers\admin\UserController::class,'cancel_client'])->name('cancel_client');
+    Route::post('toggle-payment',[App\Http\Controllers\admin\UserController::class,'toggle_payment_processing'])->name('toggle_payment');
+    Route::get('client-details/{id}',[App\Http\Controllers\admin\UserController::class,'get_client_details'])->name('client_details');
     Route::get('user-create',[App\Http\Controllers\admin\UserController::class,'create_user'])->name('create_user');
     Route::post('add_user',[App\Http\Controllers\admin\UserController::class,'add_user'])->name('add_user');
     Route::get('user-view/{id}',[App\Http\Controllers\admin\UserController::class,'user_view'])->name('user_view');

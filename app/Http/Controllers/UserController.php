@@ -154,6 +154,16 @@ class UserController extends Controller
     $days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
     $timezone = $request->input('timezone');
 
+    // Validate daily call limits
+    $validationErrors = $this->validateDailyCallLimits($request, $timezone);
+    if (!empty($validationErrors)) {
+        return response()->json([
+            "status" => false, 
+            "message" => "Call limit exceeded",
+            "errors" => $validationErrors
+        ], 400);
+    }
+
     $user = User::find($loginUser->id);
     // dd('+'.$request->phone_country_code.$request->phone);
     $voice_url = "";
@@ -241,11 +251,11 @@ private function convertToUTC($time, $amPm, $timezone)
         $dateTimeString = $time . " " . $amPm;
         Log::info("{$dateTimeString}");
         
-        // Use today\'s date for conversion (since we only care about time)
+        // Use today"s date for conversion (since we only care about time)
         $today = date("Y-m-d");
         $fullDateTime = $today . " " . $dateTimeString;
         
-        // Create DateTime object in the user\'s timezone
+        // Create DateTime object in the user"s timezone
         $dateTime = \DateTime::createFromFormat("Y-m-d g:i A", $fullDateTime, new \DateTimeZone($timezone));
         
         if ($dateTime === false) {
@@ -266,6 +276,65 @@ private function convertToUTC($time, $amPm, $timezone)
         return null;
     }
 }
+
+/**
+     * Check if user has exceeded 3 calls limit for current calendar day in their timezone
+     */
+    private function hasExceededDailyCallLimit($userId, $timezone)
+    {
+        // Get current date in user"s timezone
+        $currentDate = Carbon::now($timezone)->format("Y-m-d");
+        
+        // Get the user"s loved one to check service status
+        $lovedone = Lovedone::where("user_id", $userId)->first();
+        if (!$lovedone) {
+            return false;
+        }
+        
+        // Get current day of week in user"s timezone
+        $currentDay = strtolower(Carbon::now($timezone)->format("D"));
+        
+        // Get today"s scheduled times
+        $todayTimes = Time::where("user_id", $userId)
+                         ->where("day", $currentDay)
+                         ->first();
+        
+        if (!$todayTimes) {
+            return false;
+        }
+        
+        // Count non-empty time slots for today
+        $scheduledCallsToday = 0;
+        if (!empty($todayTimes->time1)) $scheduledCallsToday++;
+        if (!empty($todayTimes->time2)) $scheduledCallsToday++;
+        if (!empty($todayTimes->time3)) $scheduledCallsToday++;
+        
+        return $scheduledCallsToday >= 3;
+    }
+    
+    /**
+     * Validate and count time entries per day
+     */
+    private function validateDailyCallLimits($request, $timezone)
+    {
+        $days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+        $errors = [];
+        
+        foreach ($days as $day) {
+            $timeCount = 0;
+            
+            // Count non-empty time entries for this day
+            if (!empty($request->input("{$day}_time1"))) $timeCount++;
+            if (!empty($request->input("{$day}_time2"))) $timeCount++;
+            if (!empty($request->input("{$day}_time3"))) $timeCount++;
+            
+            if ($timeCount > 3) {
+                $errors[] = "Maximum 3 calls allowed per day. You entered {$timeCount} times for " . ucfirst($day) . ".";
+            }
+        }
+        
+        return $errors;
+    }
 
     public function notification_number_and_email(Request $request){
         $user_id = Auth::user()->id;
