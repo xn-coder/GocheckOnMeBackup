@@ -16,6 +16,7 @@ class CallStatus extends Model
         'call_sid',
         'call_duration',
         'recording_url',
+        'answered_by',
         'initiated_at',
         'answered_at',
         'completed_at'

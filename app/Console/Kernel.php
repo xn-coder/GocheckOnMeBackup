@@ -36,7 +36,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('calls:check-and-initiate')->everyMinute();
         
         // Fetch call history every 5 minutes to update status
-        $schedule->command('fetch:call-history')->everyFiveMinutes();
+        $schedule->command('fetch:call-history')->everyMinute();
     }
 
 

@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Hash;
 use SessionHandler;
 use DateTime; 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -236,13 +237,15 @@ private function convertToUTC($time, $amPm, $timezone)
 
     try {
         // Create datetime string in 12-hour format
-        $dateTimeString = $time . " " . $amPm;
         
-        // Use today"s date for conversion (since we only care about time)
+        $dateTimeString = $time . " " . $amPm;
+        Log::info("{$dateTimeString}");
+        
+        // Use today\'s date for conversion (since we only care about time)
         $today = date("Y-m-d");
         $fullDateTime = $today . " " . $dateTimeString;
         
-        // Create DateTime object in the user"s timezone
+        // Create DateTime object in the user\'s timezone
         $dateTime = \DateTime::createFromFormat("Y-m-d g:i A", $fullDateTime, new \DateTimeZone($timezone));
         
         if ($dateTime === false) {
@@ -256,7 +259,7 @@ private function convertToUTC($time, $amPm, $timezone)
         
         // Convert to UTC
         $dateTime->setTimezone(new \DateTimeZone("UTC"));
-        return $dateTime->format("H:i");
+        return $dateTime->format("H:i:s"); // Changed to H:i:s format for consistency
         
     } catch (\Exception $e) {
         \Log::error("Time conversion error: " . $e->getMessage() . " for time: $time $amPm in timezone: $timezone");
